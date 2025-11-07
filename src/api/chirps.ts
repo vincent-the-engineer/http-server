@@ -31,7 +31,18 @@ export async function handlerValidateChirp(req: Request, res: Response) {
       return;
     }
 
-    respondWithJSON(res, 200, { valid: true });
+    const profanities = ["kerfuffle", "sharbert", "fornax"];
+    const words = params.body.split(" ");
+
+    for (const [index, word] of words.entries()) {
+      if (profanities.includes(word.toLowerCase())) {
+        words[index] = "****";
+      }
+    }
+
+    const cleanedBody = words.join(" ");
+
+    respondWithJSON(res, 200, { cleanedBody: cleanedBody });
   });
 }
 
