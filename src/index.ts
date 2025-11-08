@@ -4,6 +4,7 @@ import { config } from "./config.js";
 import { handlerValidateChirp } from "./api/chirps.js";
 import { handlerMetrics } from "./api/metrics.js";
 import {
+  middlewareErrorHandler,
   middlewareLogResponses,
   middlewareMetricsInc,
 } from "./api/middleware.js";
@@ -17,10 +18,23 @@ const PORT = 8080;
 app.use(middlewareLogResponses);
 app.use("/app", middlewareMetricsInc, express.static("./src/app"));
 
-app.get("/admin/metrics", handlerMetrics);
-app.post("/admin/reset", handlerReset);
-app.get("/api/healthz", handlerStatus);
-app.post("/api/validate_chirp", handlerValidateChirp);
+app.get("/admin/metrics", (req, res, next) => {
+  Promise.resolve(handlerMetrics(req, res)).catch(next);
+});
+
+app.post("/admin/reset", (req, res, next) => {
+  Promise.resolve(handlerReset(req, res)).catch(next);
+});
+
+app.get("/api/healthz", (req, res, next) => {
+  Promise.resolve(handlerStatus(req, res)).catch(next);
+});
+
+app.post("/api/validate_chirp", (req, res, next) => {
+  Promise.resolve(handlerValidateChirp(req, res)).catch(next);
+});
+
+app.use(middlewareErrorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);

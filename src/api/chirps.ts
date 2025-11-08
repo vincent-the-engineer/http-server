@@ -10,39 +10,44 @@ export async function handlerValidateChirp(req: Request, res: Response) {
     body: string;
   };
 
-  let body = "";
+  const body = await readBody(req);
+  let params: Parameters;
 
-  req.on("data", (chunk) => {
-    body += chunk;
-  });
+  try {
+    params = JSON.parse(body);
+  } catch (error) {
+    respondWithError(res, 400, "Invalid JSON");
+    return;
+  }
 
-  req.on("end", () => {
-    let params: Parameters;
+  if (params.body.length > maxChirpLength) {
+    throw new Error("Chirp is too long");
+  }
 
-    try {
-      params = JSON.parse(body);
-    } catch (error) {
-      respondWithError(res, 400, "Invalid JSON");
-      return;
+  const profanities = ["kerfuffle", "sharbert", "fornax"];
+  const words = params.body.split(" ");
+
+  for (const [index, word] of words.entries()) {
+    if (profanities.includes(word.toLowerCase())) {
+      words[index] = "****";
     }
+  }
 
-    if (params.body.length > maxChirpLength) {
-      respondWithError(res, 400, "Chirp is too long");
-      return;
-    }
+  const cleanedBody = words.join(" ");
 
-    const profanities = ["kerfuffle", "sharbert", "fornax"];
-    const words = params.body.split(" ");
+  respondWithJSON(res, 200, { cleanedBody: cleanedBody });
+}
 
-    for (const [index, word] of words.entries()) {
-      if (profanities.includes(word.toLowerCase())) {
-        words[index] = "****";
-      }
-    }
+function readBody(req: Request): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = "";
 
-    const cleanedBody = words.join(" ");
+    req.on("data", (chunk) => {
+      data += chunk;
+    });
 
-    respondWithJSON(res, 200, { cleanedBody: cleanedBody });
+    req.on("end", () => resolve(data));
+    req.on("error", reject);
   });
 }
 
