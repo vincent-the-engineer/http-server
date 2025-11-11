@@ -1,4 +1,6 @@
 dist/
 node_modules/
+src/db/migrations/
+.env
 server.log
 
