@@ -11,15 +11,7 @@ export async function handlerValidateChirp(req: Request, res: Response) {
     body: string;
   };
 
-  const body = await readBody(req);
-  let params: Parameters;
-
-  try {
-    params = JSON.parse(body);
-  } catch (error) {
-    respondWithError(res, 400, "Invalid JSON");
-    return;
-  }
+  const params: Parameters = req.body;
 
   if (params.body.length > maxChirpLength) {
     throw new BadRequestError("Chirp is too long. Max length is 140");
@@ -37,18 +29,5 @@ export async function handlerValidateChirp(req: Request, res: Response) {
   const cleanedBody = words.join(" ");
 
   respondWithJSON(res, 200, { cleanedBody: cleanedBody });
-}
-
-function readBody(req: Request): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let data = "";
-
-    req.on("data", (chunk) => {
-      data += chunk;
-    });
-
-    req.on("end", () => resolve(data));
-    req.on("error", reject);
-  });
 }
 

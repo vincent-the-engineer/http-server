@@ -13,6 +13,7 @@ import {
 } from "./api/middleware.js";
 import { handlerReset } from "./api/reset.js";
 import { handlerStatus } from "./api/status.js";
+import { handlerUsers } from "./api/users.js";
 
 
 const migrationClient = postgres(config.db.url, { max: 1 });
@@ -21,6 +22,8 @@ await migrate(drizzle(migrationClient), config.db.migrationConfig);
 const app = express();
 
 app.use(middlewareLogResponses);
+app.use(express.json());
+
 app.use("/app", middlewareMetricsInc, express.static("./src/app"));
 
 app.get("/admin/metrics", (req, res, next) => {
@@ -33,6 +36,10 @@ app.post("/admin/reset", (req, res, next) => {
 
 app.get("/api/healthz", (req, res, next) => {
   Promise.resolve(handlerStatus(req, res)).catch(next);
+});
+
+app.post("/api/users", (req, res, next) => {
+  Promise.resolve(handlerUsers(req, res)).catch(next);
 });
 
 app.post("/api/validate_chirp", (req, res, next) => {
