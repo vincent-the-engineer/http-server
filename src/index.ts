@@ -4,7 +4,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";
 
 import { config } from "./config.js";
-import { handlerValidateChirp } from "./api/chirps.js";
+import { handlerCreateChirp } from "./api/chirps.js";
 import { handlerMetrics } from "./api/metrics.js";
 import {
   middlewareErrorHandler,
@@ -34,16 +34,16 @@ app.post("/admin/reset", (req, res, next) => {
   Promise.resolve(handlerReset(req, res)).catch(next);
 });
 
+app.post("/api/chirps", (req, res, next) => {
+  Promise.resolve(handlerCreateChirp(req, res)).catch(next);
+});
+
 app.get("/api/healthz", (req, res, next) => {
   Promise.resolve(handlerStatus(req, res)).catch(next);
 });
 
 app.post("/api/users", (req, res, next) => {
   Promise.resolve(handlerUsers(req, res)).catch(next);
-});
-
-app.post("/api/validate_chirp", (req, res, next) => {
-  Promise.resolve(handlerValidateChirp(req, res)).catch(next);
 });
 
 app.use(middlewareErrorHandler);
