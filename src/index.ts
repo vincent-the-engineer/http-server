@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { config } from "./config.js";
 import {
   handlerCreateChirp,
+  handlerGetChirp,
   handlerGetChirps,
 } from "./api/chirps.js";
 import { handlerMetrics } from "./api/metrics.js";
@@ -39,6 +40,10 @@ app.post("/admin/reset", (req, res, next) => {
 
 app.get("/api/chirps", (req, res, next) => {
   Promise.resolve(handlerGetChirps(req, res)).catch(next);
+});
+
+app.get("/api/chirps/:chirpID", (req, res, next) => {
+  Promise.resolve(handlerGetChirp(req, res)).catch(next);
 });
 
 app.post("/api/chirps", (req, res, next) => {
