@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 
 import { BadRequestError } from "./errors.js";
 import { respondWithJSON, respondWithError } from "./json.js";
-import { NewChirp, SelectChirp } from "../db/schema.js";
+import { NewChirp, Chirp } from "../db/schema.js";
 import {
   createChirp,
   getChirp,
@@ -13,7 +13,7 @@ import {
 const maxChirpLength = 140
 const profanities = ["kerfuffle", "sharbert", "fornax"];
 
-interface Chirp {
+interface ChirpObj {
   id: string;
   createdAt: Date;
   updatedAt: Date;
@@ -67,7 +67,7 @@ export async function handlerGetChirps(_: Request, res: Response) {
     return;
   }
 
-  const result: Chirp[] = [];
+  const result: ChirpObj[] = [];
 
   for (const chirp of chirps) {
     const chirpObj = getChirpObj(chirp);
@@ -103,12 +103,12 @@ function getCleanedBody(body: string, profanities: string[]) {
   return cleanedBody;
 }
 
-function getChirpObj(chirp: SelectChirp) {
+function getChirpObj(chirp: Chirp) {
   if (!chirp) {
     return;
   }
 
-  const chirpObj: Chirp = {
+  const chirpObj: ChirpObj = {
     id: chirp.id,
     createdAt: chirp.createdAt,
     updatedAt: chirp.updatedAt,
