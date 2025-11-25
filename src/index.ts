@@ -17,7 +17,10 @@ import {
 } from "./api/middleware.js";
 import { handlerReset } from "./api/reset.js";
 import { handlerStatus } from "./api/status.js";
-import { handlerUsers } from "./api/users.js";
+import {
+  handlerLogin,
+  handlerUsers,
+} from "./api/users.js";
 
 
 const migrationClient = postgres(config.db.url, { max: 1 });
@@ -52,6 +55,10 @@ app.post("/api/chirps", (req, res, next) => {
 
 app.get("/api/healthz", (req, res, next) => {
   Promise.resolve(handlerStatus(req, res)).catch(next);
+});
+
+app.post("/api/login", (req, res, next) => {
+  Promise.resolve(handlerLogin(req, res)).catch(next);
 });
 
 app.post("/api/users", (req, res, next) => {

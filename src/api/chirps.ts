@@ -71,9 +71,7 @@ export async function handlerGetChirps(_: Request, res: Response) {
 
   for (const chirp of chirps) {
     const chirpObj = getChirpObj(chirp);
-    if (chirpObj) {
-      result.push(chirpObj);
-    }
+    result.push(chirpObj);
   }
 
   respondWithJSON(res, 200, chirps);
@@ -105,7 +103,7 @@ function getCleanedBody(body: string, profanities: string[]) {
 
 function getChirpObj(chirp: Chirp) {
   if (!chirp) {
-    return;
+    throw new Error("Invalid Chirp");
   }
 
   const chirpObj: ChirpObj = {
