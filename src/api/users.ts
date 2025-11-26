@@ -19,6 +19,9 @@ interface UserObj {
   updatedAt: Date;
 }
 
+type Payload = Pick<JwtPayload, "iss" | "sub" | "iat" | "exp">;
+
+
 export async function handlerLogin(req: Request, res: Response) {
   const params: Parameters = req.body;
   const errorText = "Incorrect email or password";
