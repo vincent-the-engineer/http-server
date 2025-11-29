@@ -1,8 +1,13 @@
 import type { Request, Response } from "express";
 
-import { checkPasswordHash, hashPassword } from "./auth.js";
+import {
+  checkPasswordHash,
+  hashPassword,
+  makeJWT,
+} from "./auth.js";
 import { BadRequestError } from "./errors.js";
 import { respondWithJSON, respondWithError } from "./json.js";
+import { config } from "../config.js";
 import { NewUser, User } from "../db/schema.js";
 import { createUser, getUser } from "../db/queries/users.js";
 
@@ -10,6 +15,7 @@ import { createUser, getUser } from "../db/queries/users.js";
 type Parameters = {
   email: string;
   password: string;
+  expiresInSeconds: number;
 };
 
 interface UserObj {
@@ -17,9 +23,8 @@ interface UserObj {
   email: string;
   createdAt: Date;
   updatedAt: Date;
+  token?: string;
 }
-
-type Payload = Pick<JwtPayload, "iss" | "sub" | "iat" | "exp">;
 
 
 export async function handlerLogin(req: Request, res: Response) {
@@ -44,7 +49,15 @@ export async function handlerLogin(req: Request, res: Response) {
     return;
  }
 
-  respondWithJSON(res, 200, getUserObj(user));
+  let expiresInSeconds = 3600;
+  if (params.expiresInSeconds && params.expiresInSeconds > 0
+      && params.expiresInSeconds < expiresInSeconds) {
+    expiresInSeconds = params.expiresInSeconds;
+  }
+
+  const token = await makeJWT(user.id, expiresInSeconds, config.api.secret);
+
+  respondWithJSON(res, 200, getUserObj(user, token));
 }
 
 export async function handlerUsers(req: Request, res: Response) {
@@ -72,7 +85,7 @@ export async function handlerUsers(req: Request, res: Response) {
   respondWithJSON(res, 201, getUserObj(user));
 }
 
-function getUserObj(user: User) {
+function getUserObj(user: User, token: string = "") {
   if (!user) {
     throw new Error("Invalid user");
   }
@@ -82,6 +95,7 @@ function getUserObj(user: User) {
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    ...(token && { token: token }),
   };
 
   return userObj;

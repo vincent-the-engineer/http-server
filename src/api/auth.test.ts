@@ -38,7 +38,7 @@ describe("JWT Making", () => {
   const secret2 = "WrongSecret456";
   let jwt1: string;
 
-  beforeAll(async() => {
+  beforeAll(async () => {
     jwt1 = await makeJWT(userID1, expiresIn1, secret1);
   });
 
@@ -46,16 +46,16 @@ describe("JWT Making", () => {
     vi.useRealTimers();
   });
 
-  it("should return user ID for valid token", async() => {
+  it("should return user ID for valid token", async () => {
     const result = await validateJWT(jwt1, secret1);
-    expect(result).toBe(userID1);		
+    expect(result).toBe(userID1);
   });
 
-  it("should throw an error when the secret is wrong", async() => {
+  it("should throw an error when the secret is wrong", async () => {
     await expect(validateJWT(jwt1, secret2)).rejects.toThrow();
   });
 
-  it("should throw an error when the token has expired", async() => {
+  it("should throw an error when the token has expired", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(Date.now() + (expiresIn1 + 1) * 1000);
     await expect(validateJWT(jwt1, secret1)).rejects.toThrow();

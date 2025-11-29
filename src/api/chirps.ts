@@ -1,7 +1,9 @@
 import type { Request, Response } from "express";
 
+import { getBearerToken, validateJWT } from "./auth.js";
 import { BadRequestError } from "./errors.js";
 import { respondWithJSON, respondWithError } from "./json.js";
+import { config } from "../config.js";
 import { NewChirp, Chirp } from "../db/schema.js";
 import {
   createChirp,
@@ -29,12 +31,17 @@ export async function handlerCreateChirp(req: Request, res: Response) {
 
   const params: Parameters = req.body;
 
-  if (!params.userId) {
-    throw new BadRequestError("No user ID for Chirp");
+  let userId: string;
+  try {
+    const token = getBearerToken(req);
+    userId = await validateJWT(token, config.api.secret);
+  } catch (err) {
+    respondWithJSON(res, 401, "Unauthorized");
+    return;
   }
 
   const body = validateChirp(params.body);
-  const chirp = await createChirp({ body: body, userId: params.userId});
+  const chirp = await createChirp({ body: body, userId: userId});
 
   if (!chirp) {
     throw new Error("Could not create Chirp");
