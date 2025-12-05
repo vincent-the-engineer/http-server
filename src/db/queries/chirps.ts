@@ -9,6 +9,7 @@ export async function createChirp(chirp: NewChirp) {
     .values(chirp)
     .onConflictDoNothing()
     .returning();
+
   return result;
 }
 

@@ -19,6 +19,8 @@ import { handlerReset } from "./api/reset.js";
 import { handlerStatus } from "./api/status.js";
 import {
   handlerLogin,
+  handlerRefresh,
+  handlerRevoke,
   handlerUsers,
 } from "./api/users.js";
 
@@ -59,6 +61,14 @@ app.get("/api/healthz", (req, res, next) => {
 
 app.post("/api/login", (req, res, next) => {
   Promise.resolve(handlerLogin(req, res)).catch(next);
+});
+
+app.post("/api/refresh", (req, res, next) => {
+  Promise.resolve(handlerRefresh(req, res)).catch(next);
+});
+
+app.post("/api/revoke", (req, res, next) => {
+  Promise.resolve(handlerRevoke(req, res)).catch(next);
 });
 
 app.post("/api/users", (req, res, next) => {

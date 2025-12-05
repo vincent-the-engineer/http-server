@@ -1,9 +1,14 @@
 import * as argon2 from "argon2";
+import * as crypto from "crypto";
 import type { Request } from "express";
 import jwt from "jsonwebtoken";
 
+import { NewRefreshToken } from "../db/schema.js";
+import { createRefreshToken } from "../db/queries/tokens.js";
+
 
 type Payload = Pick<jwt.JwtPayload, "iss" | "sub" | "iat" | "exp">;
+const refreshTokenBytes = 32;
 
 
 export async function checkPasswordHash(
@@ -72,4 +77,24 @@ export function getBearerToken(req: Request): string {
 
   return auth.slice(prefix.length).trim();
 } 
+
+export async function makeRefreshToken(userId: string) {
+  const token = crypto.randomBytes(refreshTokenBytes).toString("hex");
+
+  const expiresInDays = 60;
+  const expireTime = new Date();
+  expireTime.setDate(expireTime.getDate() + expiresInDays);
+
+  const refreshToken = await createRefreshToken({
+    token: token,
+    userId: userId,
+    expiresAt: expireTime,
+  });
+
+  if (!refreshToken) {
+    throw new Error("Could not create refresh token");
+  }
+
+  return token;
+}
 

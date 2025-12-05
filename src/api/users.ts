@@ -2,20 +2,25 @@ import type { Request, Response } from "express";
 
 import {
   checkPasswordHash,
+  getBearerToken,
   hashPassword,
   makeJWT,
+  makeRefreshToken,
 } from "./auth.js";
 import { BadRequestError } from "./errors.js";
 import { respondWithJSON, respondWithError } from "./json.js";
 import { config } from "../config.js";
-import { NewUser, User } from "../db/schema.js";
+import { NewUser, User, RefreshToken } from "../db/schema.js";
+import {
+  getRefreshToken,
+  revokeRefreshToken,
+} from "../db/queries/tokens.js";
 import { createUser, getUser } from "../db/queries/users.js";
 
 
 type Parameters = {
   email: string;
   password: string;
-  expiresInSeconds: number;
 };
 
 interface UserObj {
@@ -25,6 +30,8 @@ interface UserObj {
   updatedAt: Date;
   token?: string;
 }
+
+const accessTokenExpiresInSeconds = 3600;
 
 
 export async function handlerLogin(req: Request, res: Response) {
@@ -49,15 +56,66 @@ export async function handlerLogin(req: Request, res: Response) {
     return;
  }
 
-  let expiresInSeconds = 3600;
-  if (params.expiresInSeconds && params.expiresInSeconds > 0
-      && params.expiresInSeconds < expiresInSeconds) {
-    expiresInSeconds = params.expiresInSeconds;
+  const token = await makeJWT(user.id, accessTokenExpiresInSeconds,
+                              config.api.secret);
+  const refreshToken = await makeRefreshToken(user.id);
+
+  respondWithJSON(res, 200, getUserObj(user, token, refreshToken));
+}
+
+export async function handlerRefresh(req: Request, res: Response) {
+  let refreshToken: RefreshToken | undefined;
+  try {
+    const token = getBearerToken(req);
+    refreshToken = await getRefreshToken(token);
+  } catch (err) {
+    respondWithJSON(res, 401, "Unauthorized");
+    return;
   }
 
-  const token = await makeJWT(user.id, expiresInSeconds, config.api.secret);
+  const currentTime = new Date();
+  if (!refreshToken
+      || currentTime > refreshToken.expiresAt
+      || (refreshToken.revokedAt && currentTime > refreshToken.revokedAt)
+  ) {
+    respondWithJSON(res, 401, "Unauthorized");
+    return;
+  }
 
-  respondWithJSON(res, 200, getUserObj(user, token));
+  const token = await makeJWT(
+    refreshToken.userId,
+    accessTokenExpiresInSeconds,
+    config.api.secret
+  );
+
+  respondWithJSON(res, 200, { token: token });
+}
+
+export async function handlerRevoke(req: Request, res: Response) {
+  let refreshToken: RefreshToken | undefined;
+  try {
+    const token = getBearerToken(req);
+    refreshToken = await getRefreshToken(token);
+  } catch (err) {
+    respondWithJSON(res, 401, "Unauthorized");
+    return;
+  }
+
+  const currentTime = new Date();
+  if (!refreshToken
+      || currentTime > refreshToken.expiresAt
+      || (refreshToken.revokedAt && currentTime > refreshToken.revokedAt)
+  ) {
+    respondWithJSON(res, 401, "Unauthorized");
+    return;
+  }
+
+  const result = await revokeRefreshToken(refreshToken.token, currentTime);
+  if (!result) {
+    throw new Error("Cannot revoke refresh token");
+  }
+
+  res.status(204).end();
 }
 
 export async function handlerUsers(req: Request, res: Response) {
@@ -85,7 +143,11 @@ export async function handlerUsers(req: Request, res: Response) {
   respondWithJSON(res, 201, getUserObj(user));
 }
 
-function getUserObj(user: User, token: string = "") {
+function getUserObj(
+  user: User,
+  token: string = "",
+  refreshToken: string = ""
+) {
   if (!user) {
     throw new Error("Invalid user");
   }
@@ -96,6 +158,7 @@ function getUserObj(user: User, token: string = "") {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     ...(token && { token: token }),
+    ...(refreshToken && { refreshToken: refreshToken }),
   };
 
   return userObj;

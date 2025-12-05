@@ -28,10 +28,27 @@ export const chirps = pgTable("chirps", {
   body: varchar("body", { length: 140 }).notNull(),
   userId: uuid("user_id")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }
-  ),
+    .references(() => users.id, { onDelete: "cascade" }),
 });
 
 export type Chirp = typeof chirps.$inferSelect;
 export type NewChirp = typeof chirps.$inferInsert;
+
+
+export const refreshTokens = pgTable("refresh_tokens", {
+  token: varchar("token", { length: 64 }).primaryKey(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  revokedAt: timestamp("revoked_at"),
+});
+
+export type RefreshToken = typeof refreshTokens.$inferSelect;
+export type NewRefreshToken = typeof refreshTokens.$inferInsert;
 
